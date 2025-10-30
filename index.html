@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>互動式數獨 Sudoku</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>互動式數獨 Sudoku</h1>
+    <p>點選空格輸入 1–9。按「檢查」驗證目前填寫是否正確，按「重設」清空使用者輸入。</p>
+  </header>
+
+  <main class="app-main">
+    <section class="toolbar">
+      <button id="btn-check" class="btn primary">檢查</button>
+      <button id="btn-reset" class="btn">重設</button>
+      <span id="status" aria-live="polite" class="status"></span>
+    </section>
+
+    <section id="board" class="board" aria-label="9x9 數獨盤面">
+      <!-- Grid cells will be injected by app.js -->
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>© <span id="year"></span> Sudoku Web — MIT License</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

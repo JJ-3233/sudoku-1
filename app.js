@@ -1,157 +1,304 @@
-/* Sudoku Interactive App */
-const puzzle = [
-  [5,3,0,0,7,0,0,0,0],
-  [6,0,0,1,9,5,0,0,0],
-  [0,9,8,0,0,0,0,6,0],
-  [8,0,0,0,6,0,0,0,3],
-  [4,0,0,8,0,3,0,0,1],
-  [7,0,0,0,2,0,0,0,6],
-  [0,6,0,0,0,0,2,8,0],
-  [0,0,0,4,1,9,0,0,5],
-  [0,0,0,0,8,0,0,7,9]
-];
+// ===============================
+// 🎨 Sudoku Puzzle
+// ===============================
+const PUZZLE =
+  "530070000" +
+  "600195000" +
+  "098000060" +
+  "800060003" +
+  "400803001" +
+  "700020006" +
+  "060000280" +
+  "000419005" +
+  "000080079";
 
-/* Known solution to the above puzzle */
-const solution = [
-  [5,3,4,6,7,8,9,1,2],
-  [6,7,2,1,9,5,3,4,8],
-  [1,9,8,3,4,2,5,6,7],
-  [8,5,9,7,6,1,4,2,3],
-  [4,2,6,8,5,3,7,9,1],
-  [7,1,3,9,2,4,8,5,6],
-  [9,6,1,5,3,7,2,8,4],
-  [2,8,7,4,1,9,6,3,5],
-  [3,4,5,2,8,6,1,7,9]
-];
+const SIZE = 9;
 
-const boardEl = document.getElementById('board');
-const statusEl = document.getElementById('status');
-const btnCheck = document.getElementById('btn-check');
-const btnReset = document.getElementById('btn-reset');
+const boardEl = document.getElementById("board");
+const toastEl = document.getElementById("toast");
+const resetBtn = document.getElementById("resetBtn");
+const clearBtn = document.getElementById("clearBtn");
+const notesBtn = document.getElementById("notesBtn");
 
-function buildBoard() {
-  boardEl.innerHTML = '';
-  for (let r = 0; r < 9; r++) {
-    for (let c = 0; c < 9; c++) {
-      const cell = document.createElement('div');
-      cell.className = 'cell';
-      cell.dataset.r = r;
-      cell.dataset.c = c;
+// 全域狀態
+let cells = [];
+let fixed = new Set();
+let selected = -1;
 
-      const val = puzzle[r][c];
-      if (val !== 0) {
-        const fixed = document.createElement('div');
-        fixed.className = 'fixed';
-        fixed.textContent = String(val);
-        cell.appendChild(fixed);
-      } else {
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.inputMode = 'numeric';
-        input.maxLength = 1;
-        input.setAttribute('aria-label', `Row ${r+1} Column ${c+1}`);
-        input.placeholder = '';
-        input.addEventListener('input', onInputFilter);
-        input.addEventListener('focus', () => cell.classList.remove('error', 'valid'));
-        cell.appendChild(input);
-      }
+let notesMode = false;
+let notes = Array(81).fill(null).map(() => new Set());
 
-      // bold borders between subgrids
-      if (r === 2 || r === 5) cell.style.borderBottomWidth = '3px';
-      if (c === 2 || c === 5) cell.style.borderRightWidth = '3px';
+// ===============================
+// 初始化按鈕事件（最重要 → 移出 buildBoard）
+// ===============================
+clearBtn.addEventListener("click", clearSelected);
+resetBtn.addEventListener("click", () => buildBoard(PUZZLE));
+notesBtn.addEventListener("click", () => {
+  notesMode = !notesMode;
+  notesBtn.classList.toggle("active", notesMode);
+  showToast(notesMode ? "草稿模式：開啟" : "草稿模式：關閉");
+});
 
-      boardEl.appendChild(cell);
+// ===============================
+// 建立棋盤
+// ===============================
+function buildBoard(puzzleStr) {
+  boardEl.innerHTML = "";
+  cells = [];
+  fixed.clear();
+  selected = -1;
+  notes = Array(81).fill(null).map(() => new Set());
+
+  for (let i = 0; i < SIZE * SIZE; i++) {
+    const ch = puzzleStr[i];
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    cell.tabIndex = 0;
+    cell.dataset.index = i;
+
+    // 題目格
+    if (ch !== "0") {
+      cell.textContent = ch;
+      cell.classList.add("given");
+      fixed.add(i);
     }
-  }
-  document.getElementById('year').textContent = new Date().getFullYear();
-}
 
-function onInputFilter(e) {
-  // allow only digits 1-9
-  const v = e.target.value.replace(/[^1-9]/g, '');
-  e.target.value = v.slice(0, 1);
-}
+    cell.addEventListener("click", () => selectCell(i));
+    cell.addEventListener("keydown", handleKey);
 
-function readBoard() {
-  const grid = [];
-  let idx = 0;
-  for (let r = 0; r < 9; r++) {
-    const row = [];
-    for (let c = 0; c < 9; c++) {
-      const cell = boardEl.children[idx++];
-      const fixed = cell.querySelector('.fixed');
-      if (fixed) {
-        row.push(parseInt(fixed.textContent, 10));
-      } else {
-        const v = cell.querySelector('input').value;
-        row.push(v ? parseInt(v, 10) : 0);
-      }
-    }
-    grid.push(row);
-  }
-  return grid;
-}
-
-function checkBoard() {
-  const grid = readBoard();
-  let mistakes = 0;
-  let empty = 0;
-
-  // Clear classes
-  for (const cell of boardEl.children) cell.classList.remove('error', 'valid');
-
-  let idx = 0;
-  for (let r = 0; r < 9; r++) {
-    for (let c = 0; c < 9; c++) {
-      const cell = boardEl.children[idx++];
-      const fixed = cell.querySelector('.fixed');
-      if (fixed) continue; // skip fixed cells
-      const val = grid[r][c];
-      if (val === 0) {
-        empty++;
-        continue;
-      }
-      if (solution[r][c] !== val) {
-        mistakes++;
-        cell.classList.add('error');
-      } else {
-        cell.classList.add('valid');
-      }
-    }
+    cells.push(cell);
+    boardEl.appendChild(cell);
   }
 
-  if (mistakes > 0) {
-    setStatus(`有 ${mistakes} 個錯誤，紅色格子請重新檢查。`, 'error');
-  } else if (empty > 0) {
-    setStatus(`目前沒有錯誤，尚有 ${empty} 個空格。`, 'info');
+  // 數字鍵
+  document.querySelectorAll(".key").forEach(btn => {
+    btn.addEventListener("click", () => placeNumber(btn.dataset.num));
+  });
+}
+
+// ===============================
+// 選取格子 + 行列宮高亮
+// ===============================
+function selectCell(i) {
+  if (i === selected) return;
+
+  clearHighlights();
+
+  if (selected >= 0)
+    cells[selected].classList.remove("selected");
+
+  selected = i;
+  cells[selected].classList.add("selected");
+
+  const r = Math.floor(i / SIZE);
+  const c = i % SIZE;
+
+  highlightGroup(indicesRow(r));
+  highlightGroup(indicesCol(c));
+  highlightGroup(indicesBox(Math.floor(r / 3), Math.floor(c / 3)));
+}
+
+function highlightGroup(indices) {
+  indices.forEach(idx => {
+    if (idx !== selected)
+      cells[idx].classList.add("highlight");
+  });
+}
+
+function clearHighlights() {
+  cells.forEach(c => c.classList.remove("highlight"));
+}
+
+// ===============================
+// 鍵盤處理
+// ===============================
+function handleKey(e) {
+  if (e.key >= "1" && e.key <= "9") {
+    placeNumber(e.key);
+    e.preventDefault();
+  }
+  if (e.key === "Backspace" || e.key === "Delete") {
+    clearSelected();
+    e.preventDefault();
+  }
+  if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)) {
+    moveSelection(e.key);
+    e.preventDefault();
+  }
+}
+
+// ===============================
+// 移動選擇
+// ===============================
+function moveSelection(key) {
+  if (selected < 0) return;
+
+  const r = Math.floor(selected / SIZE);
+  const c = selected % SIZE;
+  let nr = r, nc = c;
+
+  if (key === "ArrowUp") nr = Math.max(0, r - 1);
+  if (key === "ArrowDown") nr = Math.min(SIZE - 1, r + 1);
+  if (key === "ArrowLeft") nc = Math.max(0, c - 1);
+  if (key === "ArrowRight") nc = Math.min(SIZE - 1, c + 1);
+
+  selectCell(nr * SIZE + nc);
+  cells[selected].focus();
+}
+
+// ===============================
+// 填入數字（含 Notes）
+// ===============================
+function placeNumber(n) {
+  if (selected < 0)
+    return showToast("請先選擇一格");
+
+  if (fixed.has(selected))
+    return showToast("題目格不能修改");
+
+  // 草稿模式
+  if (notesMode) {
+    if (notes[selected].has(n)) notes[selected].delete(n);
+    else notes[selected].add(n);
+
+    renderNotes(selected);
+    return;
+  }
+
+  // 正式輸入
+  notes[selected].clear();
+  cells[selected].classList.remove("notes");
+  cells[selected].textContent = n;
+
+  updateConflicts();
+  checkSolved();
+}
+
+// ===============================
+// Notes 渲染（3×3 迷你九宮格）
+// ===============================
+function renderNotes(idx) {
+  const cell = cells[idx];
+
+  if (notes[idx].size === 0) {
+    cell.innerHTML = "";
+    cell.textContent = "";
+    cell.classList.remove("notes");
+    return;
+  }
+
+  cell.classList.add("notes");
+
+  let html = '<div class="note-grid">';
+  for (let i = 1; i <= 9; i++) {
+    html += `<div class="note">${notes[idx].has(i.toString()) ? i : ""}</div>`;
+  }
+  html += "</div>";
+
+  cell.innerHTML = html;
+}
+
+// ===============================
+// 清除格子（Notes & 數字都能清除）
+// ===============================
+function clearSelected() {
+  if (selected < 0) return;
+  if (fixed.has(selected)) return;  // 題目格不能清除
+
+  // 清 Notes
+  notes[selected].clear();
+  cells[selected].classList.remove("notes");
+  cells[selected].innerHTML = "";
+  cells[selected].textContent = "";
+
+  updateConflicts();
+}
+
+// ===============================
+// 取值工具
+// ===============================
+function getValueAt(idx) {
+  const t = cells[idx].textContent.trim();
+  return t === "" ? 0 : Number(t);
+}
+
+// ===============================
+// 衝突檢查
+// ===============================
+function updateConflicts() {
+  cells.forEach(c => c.classList.remove("conflict"));
+
+  for (let r = 0; r < 9; r++) markConflicts(indicesRow(r));
+  for (let c = 0; c < 9; c++) markConflicts(indicesCol(c));
+  for (let br = 0; br < 3; br++)
+    for (let bc = 0; bc < 3; bc++)
+      markConflicts(indicesBox(br, bc));
+}
+
+function markConflicts(indices) {
+  const seen = new Map();
+
+  for (const i of indices) {
+    const v = getValueAt(i);
+    if (!v) continue;
+
+    if (seen.has(v)) {
+      cells[i].classList.add("conflict");
+      cells[seen.get(v)].classList.add("conflict");
+    } else {
+      seen.set(v, i);
+    }
+  }
+}
+
+// ===============================
+// indices 工具
+// ===============================
+function indicesRow(r) {
+  return Array.from({ length: 9 }, (_, i) => r * 9 + i);
+}
+function indicesCol(c) {
+  return Array.from({ length: 9 }, (_, i) => i * 9 + c);
+}
+function indicesBox(br, bc) {
+  const arr = [];
+  for (let rr = 0; rr < 3; rr++)
+    for (let cc = 0; cc < 3; cc++)
+      arr.push((br * 3 + rr) * 9 + (bc * 3 + cc));
+  return arr;
+}
+
+// ===============================
+// 完成判定
+// ===============================
+function checkSolved() {
+  for (let i = 0; i < 81; i++)
+    if (getValueAt(i) === 0) return;
+
+  const hasConflict = cells.some(c => c.classList.contains("conflict"));
+
+  if (!hasConflict) {
+    showToast("🎉 恭喜完成！");
+    cells.forEach((c, idx) => {
+      if (!fixed.has(idx)) c.classList.add("given");
+    });
   } else {
-    setStatus('恭喜！全部正確 ✅', 'success');
+    showToast("還有衝突！");
   }
 }
 
-function resetBoard() {
-  let idx = 0;
-  for (let r = 0; r < 9; r++) {
-    for (let c = 0; c < 9; c++) {
-      const cell = boardEl.children[idx++];
-      const input = cell.querySelector('input');
-      if (input) {
-        input.value = '';
-      }
-      cell.classList.remove('error', 'valid');
-    }
-  }
-  setStatus('已清空使用者輸入。', 'info');
+// ===============================
+// Toast
+// ===============================
+let toastTimer = null;
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2000);
 }
 
-function setStatus(text, type) {
-  statusEl.textContent = text;
-  statusEl.className = 'status ' + (type || '');
-}
-
-// Wire up
-btnCheck.addEventListener('click', checkBoard);
-btnReset.addEventListener('click', resetBoard);
-
-// Init
-buildBoard();
+// ===============================
+// 開始
+// ===============================
+buildBoard(PUZZLE);

@@ -1,74 +1,213 @@
-/* Reset and base */
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", "Hiragino Sans", "Microsoft JhengHei", Arial, sans-serif; color: #222; background: #fafafa; }
-h1, p { margin: 0; }
+/* =========================================
+   🟦 基本主題
+   ========================================= */
+body {
+  background: white;
+  color: black;
+  font-family: 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+}
 
-.app-header { padding: 16px; text-align: center; background: #fff; border-bottom: 1px solid #eee; }
-.app-header h1 { font-size: 24px; margin-bottom: 6px; }
-.app-header p { color: #555; font-size: 14px; }
+h1 {
+  font-size: 1.4rem;
+  margin: 4px 0 2px;
+  font-weight: 600;
+}
 
-.app-main { max-width: 720px; margin: 0 auto; padding: 16px; }
+.subtitle {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 10px;
+}
 
-.toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-.btn { padding: 8px 14px; border: 1px solid #ddd; background: #fff; border-radius: 12px; cursor: pointer; font-size: 14px; transition: transform .05s ease, box-shadow .2s ease; }
-.btn:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
-.btn:active { transform: translateY(1px); }
-.btn.primary { background: #2563eb; border-color: #2563eb; color: #fff; }
-
-.status { margin-left: auto; font-size: 14px; color: #2563eb; min-height: 1.4em; }
-
+/* =========================================
+   🟦 棋盤（9×9）
+   經典數獨風格：外框最粗 / 3×3 黑粗線 / 其餘細灰線
+   ========================================= */
 .board {
   display: grid;
-  grid-template-columns: repeat(9, 1fr);
-  gap: 0;
-  border: 2px solid #333;
-  background: #fff;
-  aspect-ratio: 1 / 1;
-  width: 100%;
-  max-width: 720px;
-  margin: 0 auto;
+  grid-template-columns: repeat(9, 44px);
+  grid-template-rows: repeat(9, 44px);
 }
 
 .cell {
-  border: 1px solid #bbb;
-  position: relative;
+  border: 1px solid #ccc;
+  background: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.3rem;
+  cursor: pointer;
+  user-select: none;
 }
 
-.cell input, .cell .fixed {
+.given {
+  font-weight: 700;
+  color: #222;
+}
+
+/* =========================================
+   🟥 經典數獨粗線（黑色）
+   ========================================= */
+
+/* 上外框 */
+.cell:nth-child(-n + 9) {
+  border-top: 3px solid black;
+}
+
+/* 左外框 */
+.cell:nth-child(9n + 1) {
+  border-left: 3px solid black;
+}
+
+/* 右外框 */
+.cell:nth-child(9n) {
+  border-right: 3px solid black;
+}
+
+/* 下外框 */
+.cell:nth-child(n + 73) {
+  border-bottom: 3px solid black;
+}
+
+/* 粗橫線 (第 3, 6 行下方) */
+.cell:nth-child(n + 28):nth-child(-n + 36),
+.cell:nth-child(n + 55):nth-child(-n + 63) {
+  border-top: 3px solid black;
+}
+
+/* 粗直線 (第 3, 6 列右側) */
+.cell:nth-child(3),
+.cell:nth-child(12),
+.cell:nth-child(21),
+.cell:nth-child(30),
+.cell:nth-child(39),
+.cell:nth-child(48),
+.cell:nth-child(57),
+.cell:nth-child(66),
+.cell:nth-child(75) {
+  border-right: 3px solid black;
+}
+
+.cell:nth-child(6),
+.cell:nth-child(15),
+.cell:nth-child(24),
+.cell:nth-child(33),
+.cell:nth-child(42),
+.cell:nth-child(51),
+.cell:nth-child(60),
+.cell:nth-child(69),
+.cell:nth-child(78) {
+  border-right: 3px solid black;
+}
+
+/* =========================================
+   🟦 選中與高亮
+   ========================================= */
+.cell.highlight {
+  background: #e8f3ff !important;
+}
+
+.cell.selected {
+  background: #c7e3ff !important;
+  outline: 2px solid #4a90e2;
+  border-radius: 6px;
+}
+
+/* =========================================
+   🟦 Notes（九宮格小字 — 最終修正版）
+   ========================================= */
+
+/*
+  修正內容：
+  ✔ Notes 內縮，不貼格線
+  ✔ Notes 無外框，不干擾粗線
+  ✔ Notes 不會放大數字
+  ✔ Notes 層級乾淨，不蓋住 cell 邊框
+*/
+
+.cell.notes {
+  position: relative;
+  background: white;
+  padding: 3px;              /* ★ 內縮：避免壓線 */
+  font-size: 0;              /* 避免父層影響子層字體 */
+  overflow: hidden;
+}
+
+.cell .note-grid {
   width: 100%;
   height: 100%;
-  border: none;
-  outline: none;
-  text-align: center;
-  font-size: clamp(16px, 4.2vw, 28px);
-  font-weight: 500;
-  background: transparent;
-  padding: 0;
-  line-height: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+
+  padding: 1px;              /* ★ 再內縮一層 */
+  box-sizing: border-box;
+
+  border-radius: 3px;
+  background: #fafafa;       /* 不再有外框（避免壓粗線） */
 }
 
-.cell .fixed {
+.cell .note {
   display: flex;
-  align-items: center;
   justify-content: center;
-  color: #111;
-  background: #f6f6f6;
-  font-weight: 700;
+  align-items: center;
+
+  font-size: 0.48rem !important;   /* ★ 修正字體大小一致 */
+  color: #444;
+
+  border: 1px solid #e5e5e5;       /* 此線很細 → 不干擾外粗線 */
+  background: #ffffff;
+  border-radius: 3px;
+
+  box-sizing: border-box;
 }
 
-.cell input::placeholder { color: #ccc; }
-
-.cell.error input {
-  background: #ffecec;
-}
-.cell.valid input {
-  background: #ecffef;
+.cell.notes:hover .note {
+  background: #f4f4f4;
 }
 
-/* Thick borders for subgrid (3x3) separators */
-.cell[data-r="2"], .cell[data-r="5"] { border-bottom-width: 3px; }
-.cell[data-r="3"], .cell[data-r="6"] { /* reserved */ }
-.cell[data-c="2"], .cell[data-c="5"] { border-right-width: 3px; }
+/* =========================================
+   🟦 控制按鈕
+   ========================================= */
+.controls {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
 
-/* Footer */
-.app-footer { text-align: center; padding: 16px; color: #777; font-size: 12px; }
+button {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #aaa;
+  background: #fafafa;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+button.active {
+  background: #c7e3ff;
+  border-color: #4a90e2;
+}
+
+/* =========================================
+   🟦 Toast
+   ========================================= */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  background: #333;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  opacity: 0;
+  transition: 0.3s;
+}
+
+.toast.show {
+  opacity: 1;
+}

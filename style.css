@@ -1,213 +1,121 @@
-/* =========================================
-   🟦 基本主題
-   ========================================= */
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
-  background: white;
-  color: black;
-  font-family: 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 20px;
+  font-family: system-ui, sans-serif;
+  padding: 16px;
+  background: #f4f4f4;
+  text-align: center;
 }
 
 h1 {
-  font-size: 1.4rem;
-  margin: 4px 0 2px;
-  font-weight: 600;
+  margin-top: 0;
+  font-size: 22px;
 }
 
-.subtitle {
-  font-size: 0.9rem;
-  color: #666;
+.info {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
   margin-bottom: 10px;
-}
-
-/* =========================================
-   🟦 棋盤（9×9）
-   經典數獨風格：外框最粗 / 3×3 黑粗線 / 其餘細灰線
-   ========================================= */
-.board {
-  display: grid;
-  grid-template-columns: repeat(9, 44px);
-  grid-template-rows: repeat(9, 44px);
-}
-
-.cell {
-  border: 1px solid #ccc;
-  background: white;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 1.3rem;
-  cursor: pointer;
-  user-select: none;
-}
-
-.given {
-  font-weight: 700;
-  color: #222;
-}
-
-/* =========================================
-   🟥 經典數獨粗線（黑色）
-   ========================================= */
-
-/* 上外框 */
-.cell:nth-child(-n + 9) {
-  border-top: 3px solid black;
-}
-
-/* 左外框 */
-.cell:nth-child(9n + 1) {
-  border-left: 3px solid black;
-}
-
-/* 右外框 */
-.cell:nth-child(9n) {
-  border-right: 3px solid black;
-}
-
-/* 下外框 */
-.cell:nth-child(n + 73) {
-  border-bottom: 3px solid black;
-}
-
-/* 粗橫線 (第 3, 6 行下方) */
-.cell:nth-child(n + 28):nth-child(-n + 36),
-.cell:nth-child(n + 55):nth-child(-n + 63) {
-  border-top: 3px solid black;
-}
-
-/* 粗直線 (第 3, 6 列右側) */
-.cell:nth-child(3),
-.cell:nth-child(12),
-.cell:nth-child(21),
-.cell:nth-child(30),
-.cell:nth-child(39),
-.cell:nth-child(48),
-.cell:nth-child(57),
-.cell:nth-child(66),
-.cell:nth-child(75) {
-  border-right: 3px solid black;
-}
-
-.cell:nth-child(6),
-.cell:nth-child(15),
-.cell:nth-child(24),
-.cell:nth-child(33),
-.cell:nth-child(42),
-.cell:nth-child(51),
-.cell:nth-child(60),
-.cell:nth-child(69),
-.cell:nth-child(78) {
-  border-right: 3px solid black;
-}
-
-/* =========================================
-   🟦 選中與高亮
-   ========================================= */
-.cell.highlight {
-  background: #e8f3ff !important;
-}
-
-.cell.selected {
-  background: #c7e3ff !important;
-  outline: 2px solid #4a90e2;
-  border-radius: 6px;
-}
-
-/* =========================================
-   🟦 Notes（九宮格小字 — 最終修正版）
-   ========================================= */
-
-/*
-  修正內容：
-  ✔ Notes 內縮，不貼格線
-  ✔ Notes 無外框，不干擾粗線
-  ✔ Notes 不會放大數字
-  ✔ Notes 層級乾淨，不蓋住 cell 邊框
-*/
-
-.cell.notes {
-  position: relative;
-  background: white;
-  padding: 3px;              /* ★ 內縮：避免壓線 */
-  font-size: 0;              /* 避免父層影響子層字體 */
-  overflow: hidden;
-}
-
-.cell .note-grid {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-
-  padding: 1px;              /* ★ 再內縮一層 */
-  box-sizing: border-box;
-
-  border-radius: 3px;
-  background: #fafafa;       /* 不再有外框（避免壓粗線） */
-}
-
-.cell .note {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-
-  font-size: 0.48rem !important;   /* ★ 修正字體大小一致 */
-  color: #444;
-
-  border: 1px solid #e5e5e5;       /* 此線很細 → 不干擾外粗線 */
-  background: #ffffff;
-  border-radius: 3px;
-
-  box-sizing: border-box;
-}
-
-.cell.notes:hover .note {
-  background: #f4f4f4;
-}
-
-/* =========================================
-   🟦 控制按鈕
-   ========================================= */
-.controls {
-  margin-top: 10px;
-  display: flex;
-  gap: 8px;
+  font-size: 14px;
+  flex-wrap: wrap;
 }
 
 button {
-  padding: 8px 12px;
+  padding: 6px 14px;
   border-radius: 6px;
-  border: 1px solid #aaa;
-  background: #fafafa;
+  border: none;
+  background: #3498db;
+  color: #fff;
   cursor: pointer;
-  font-size: 1rem;
 }
 
-button.active {
-  background: #c7e3ff;
-  border-color: #4a90e2;
+#board {
+  width: 90vmin;
+  max-width: 420px;
+  aspect-ratio: 1;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  grid-template-rows: repeat(9, 1fr);
+  background: #ccc;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative; /* 為浮動方塊提供定位基準 */
 }
 
-/* =========================================
-   🟦 Toast
-   ========================================= */
-.toast {
-  position: fixed;
-  bottom: 20px;
-  background: #333;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 20px;
-  opacity: 0;
-  transition: 0.3s;
+.cell {
+  border: 1px solid #bbb;
+  font-size: 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  user-select: none;
+  transition: transform 0.18s ease, opacity 0.18s ease;
 }
 
-.toast.show {
-  opacity: 1;
+.cell.empty {
+  background: #fefefe;
+}
+
+.cell.filled {
+  color: #fff;
+  text-shadow:
+    0 0 2px rgba(0,0,0,0.9),
+    0 0 4px rgba(0,0,0,0.8),
+    0 0 6px rgba(0,0,0,0.7);
+}
+
+.cell.selected {
+  outline: 3px solid #2c3e50;
+}
+
+/* 移動完成時的小彈跳 */
+.cell.moved {
+  animation: popMove 0.25s ease-out;
+}
+
+@keyframes popMove {
+  0% { transform: scale(0.1); }
+  70% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* 消除動畫 */
+.cell.clearing {
+  animation: flashOut 0.35s ease-out;
+}
+
+@keyframes flashOut {
+  0% { opacity: 1; }
+  50% { opacity: 0.2; transform: scale(1.3); }
+  100% { opacity: 0; }
+}
+
+/* 浮動移動中的方塊 */
+.moving-piece {
+  position: absolute;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #bbb;
+  color: #fff;
+  text-shadow: 0 0 3px rgba(0,0,0,0.5);
+  transition: left 0.12s linear, top 0.12s linear;
+  pointer-events: none; /* 不影響點擊 */
+}
+
+#message {
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+#message.game-over {
+  color: #e74c3c;
+  font-weight: bold;
 }

@@ -1,38 +1,25 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <title>Sudoku Pro</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>9×9 顏色消除遊戲</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <h1>9×9 顏色消除遊戲</h1>
 
-  <h1>數獨 Sudoku</h1>
-  <div class="subtitle">具備專業 Notes 與行列高亮功能</div>
-
-  <div id="board" class="board"></div>
-
-  <div class="controls">
-    <button class="key" data-num="1">1</button>
-    <button class="key" data-num="2">2</button>
-    <button class="key" data-num="3">3</button>
-    <button class="key" data-num="4">4</button>
-    <button class="key" data-num="5">5</button>
-    <button class="key" data-num="6">6</button>
-    <button class="key" data-num="7">7</button>
-    <button class="key" data-num="8">8</button>
-    <button class="key" data-num="9">9</button>
+  <div class="info">
+    <span>步數：<span id="moves">0</span></span>
+    <span>消除：<span id="cleared">0</span></span>
+    <span>分數：<span id="score">0</span></span>
+    <button id="restartBtn">重新開始</button>
   </div>
 
-  <div class="controls">
-    <button id="notesBtn">Notes</button>
-    <button id="clearBtn">Clear</button>
-    <button id="resetBtn">Reset</button>
-  </div>
+  <div id="board"></div>
 
-  <div id="toast" class="toast"></div>
+  <div id="message"></div>
 
-  <script src="app.js"></script>
-
+  <script src="game.js"></script>
 </body>
 </html>

@@ -3,11 +3,13 @@ const ROWS = 9;
 const COLS = 9;
 const INITIAL_COLORED = 10;
 const NEW_CELLS_PER_TURN = 3;
-const MIN_GROUP_TO_CLEAR = 7;
+let minGroupToClear = 6;   // 動態消除門檻（起始為 6）
+let level = 1;             // 等級，從 1 開始
 
 const COLORS = ["#ff2b2b", "#3498db", "#fff200", "#2ecc71", "#9b59b6", "#e67e22"];
 // ===== 狀態 =====
 let board = [];
+
 let selectedCell = null;
 let moves = 0;
 let clearedCount = 0;
@@ -18,12 +20,16 @@ let lastMoveDest = null;
 let latestClearingCells = [];
 let isAnimating = false; // 動畫進行中時，忽略操作
 
+let debugCount = 0;
+
 const boardEl = document.getElementById("board");
-const movesEl = document.getElementById("moves");
-const clearedEl = document.getElementById("cleared");
 const scoreEl = document.getElementById("score");
 const messageEl = document.getElementById("message");
 const restartBtn = document.getElementById("restartBtn");
+const levelEl = document.getElementById("level");
+const thresholdEl = document.getElementById("threshold");
+
+const levelUpToast = document.getElementById("levelUpToast");
 
 // ===== 初始化 =====
 function initGame() {
@@ -48,14 +54,35 @@ function initGame() {
   renderBoard();
 }
 
+
 restartBtn.onclick = initGame;
 
 // ===== UI 顯示 =====
 function updateStats() {
-  movesEl.textContent = moves;
-  clearedEl.textContent = clearedCount;
-  scoreEl.textContent = score;
+  if (scoreEl) scoreEl.textContent = score;
+  updateDifficultyAndUI();
 }
+
+function updateDifficultyAndUI() {
+  const oldLevel = level;
+
+  // 每 1000 分升一級：0~999 分是 Lv1，1000~1999 分是 Lv2 ...
+  const newLevel = 1 + Math.floor(score / 100);
+  level = newLevel;
+
+  // 基礎門檻 6，每升一級 +1 → Lv1:6, Lv2:7, Lv3:8...
+  minGroupToClear = 6 + (level - 1);
+
+  if (levelEl)     levelEl.textContent = level;
+  if (thresholdEl) thresholdEl.textContent = minGroupToClear;
+
+  // ▲ 若有「升級」，才顯示訊息 + LvUp 中央提示
+  if (newLevel > oldLevel) {
+    setMessage(`等級提升為 Lv.${level}！現在需要 ${minGroupToClear} 個相同顏色才會消除。`);
+    showLevelUpToast(level, minGroupToClear);
+  }
+}
+
 
 function setMessage(msg, gameEnd = false) {
   messageEl.textContent = msg;
@@ -67,6 +94,10 @@ function handleCellClick(r, c) {
   if (gameOver || isAnimating) return;
 
   const cell = board[r][c];
+
+  //test only
+  levelUpToast.classList.remove("show");
+
 
   // 沒有選擇的情況：只能選有顏色的格子
   if (!selectedCell) {
@@ -148,39 +179,69 @@ function performMoveWithAnimation(from, to, path) {
   setPosForStep(0);
 
   // 給瀏覽器一點時間套用起始位置，再開始移動
-  setTimeout(function goNext() {
-    stepIndex++;
-    if (stepIndex >= path.length) {
-      // 動畫結束：移除浮動方塊，把顏色放到目的地，接著做後續邏輯
-      boardEl.removeChild(movingEl);
+setTimeout(function goNext() {
+  stepIndex++;
+if (stepIndex >= path.length) {
+  // 動畫結束：移除浮動方塊，把顏色放到目的地
+  boardEl.removeChild(movingEl);
 
-      const destCell = board[to.r][to.c];
-      destCell.color = movingColor;
+  const destCell = board[to.r][to.c];
+  destCell.color = movingColor;
 
-      lastMoveDest = { r: to.r, c: to.c };
-      moves++;
+  lastMoveDest = { r: to.r, c: to.c };
+  moves++;
 
-      const cleared = computeGroupSizes(true);
-      if (cleared) {
-        setMessage("成功消除！");
-      } else {
-        randomAddColored(NEW_CELLS_PER_TURN);
-        setMessage("新增 3 個顏色");
-      }
+  // 一個小收尾函式，最後統一更新畫面 / 狀態
+  function finishTurn() {
+    selectedCell = null;
+    updateStats();
+    renderBoard();
+    checkGameOver();
+    isAnimating = false;
+  }
 
+  // 先檢查「移動本身」是否產生可消除群組（先不清，只先標記 latestClearingCells）
+  computeGroupSizes(false);
+
+  if (latestClearingCells.length > 0) {
+    // 有可消除的 → 播放閃爍動畫，再真正清除
+    setMessage("成功消除！");
+    triggerClearAnimation(() => {
+      // 動畫完後，真正清除並加分
+      computeGroupSizes(true);
+      // 清除後再重算 groupSize（顯示用）
       computeGroupSizes(false);
-      selectedCell = null;
-      updateStats();
-      renderBoard();
-      checkGameOver();
+      finishTurn();
+    });
+  } else {
+    // 移動後沒有消除 → 新增 3 個顏色
+    randomAddColored(NEW_CELLS_PER_TURN);
 
-      isAnimating = false;
-      return;
+    // 檢查「新增 3 個顏色」後，有沒有可消除群組
+    computeGroupSizes(false);
+
+    if (latestClearingCells.length > 0) {
+      setMessage("新增 3 個顏色後也有消除！");
+      triggerClearAnimation(() => {
+        computeGroupSizes(true);  // 真正清除
+        computeGroupSizes(false); // 重算 groupSize
+        finishTurn();
+      });
+    } else {
+      // 完全沒有消除
+      setMessage("新增 3 個顏色");
+      // 已經 computeGroupSizes(false) 過了，直接收尾
+      finishTurn();
     }
+  }
 
-    setPosForStep(stepIndex);
-    setTimeout(goNext, 120); // 每步 0.12 秒
-  }, 50);
+  return;
+}
+
+
+  setPosForStep(stepIndex);
+  setTimeout(goNext, 120); // 每步 0.12 秒
+}, 50);
 }
 
 // ===== BFS 找完整路徑（含起點與終點） =====
@@ -231,6 +292,7 @@ function findPath(sr, sc, tr, tc) {
 
 // ===== 群組計算 & 消除 =====
 function computeGroupSizes(clearMode) {
+  // 先把 groupSize 清零
   for (let r = 0; r < ROWS; r++)
     for (let c = 0; c < COLS; c++)
       board[r][c].groupSize = 0;
@@ -269,17 +331,23 @@ function computeGroupSizes(clearMode) {
       const size = group.length;
       group.forEach(pos => board[pos.r][pos.c].groupSize = size);
 
-      if (clearMode && size >= MIN_GROUP_TO_CLEAR) {
+      // 不論是否真的要清，都先記錄哪些格子是可消除群組
+      if (size >= minGroupToClear) {
         toClear.push(...group);
-        clearedAny = true;
-        score += size * size;
-        clearedCount += size;
+        if (clearMode) {
+          clearedAny = true;
+          score += size * size;
+          clearedCount += size;
+        }
       }
+
     }
   }
 
+  // 給 renderBoard 畫「clearing」動畫用
   latestClearingCells = toClear;
 
+  // 如果這次是真的要清除，就把顏色清掉
   if (clearMode && toClear.length > 0) {
     toClear.forEach(({ r, c }) => {
       board[r][c].color = null;
@@ -289,6 +357,22 @@ function computeGroupSizes(clearMode) {
 
   return clearedAny;
 }
+
+// ===== 觸發閃爍動畫，再真正清除 =====
+function triggerClearAnimation(done) {
+  if (!latestClearingCells || latestClearingCells.length === 0) {
+    done();
+    return;
+  }
+
+  // 先 render 一次，讓 .clearing class 生效，跑 clearPulse 動畫
+  renderBoard();
+
+  setTimeout(() => {
+    done();
+  }, 800); // 對應 CSS 的 0.8 秒
+}
+
 
 // ===== 隨機新增顏色 =====
 function randomAddColored(count) {
@@ -364,8 +448,13 @@ function inBounds(r, c) {
 
 // ===== Render 棋盤 =====
 function renderBoard() {
+  // 先記住目前的 levelUpToast 節點（如果還在 DOM 裡）
+  const toast = document.getElementById("levelUpToast");
+
+  // 清空棋盤格子（會順便把 toast 移除）
   boardEl.innerHTML = "";
 
+  // 重畫 9x9 棋盤格
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
       const cell = board[r][c];
@@ -398,8 +487,26 @@ function renderBoard() {
     }
   }
 
+  // 最後再把 toast 放回棋盤裡（保持在最上層）
+  if (toast) {
+    boardEl.appendChild(toast);
+  }
+
   // 只讓「剛到達」那一格有 moved 動畫一次
   lastMoveDest = null;
+}
+
+function showLevelUpToast(level, threshold) {
+  if (!levelUpToast) return;
+
+  debugCount = debugCount + 1;
+  levelUpToast.textContent = `${debugCount}.Lv.${level}！需要 ${threshold} 個相同顏色才會消除`;
+
+  // 重新觸發 CSS 動畫
+  levelUpToast.classList.remove("show");
+  // 強制重排讓動畫可以重新開始
+  void levelUpToast.offsetWidth;
+  levelUpToast.classList.add("show");
 }
 
 initGame();

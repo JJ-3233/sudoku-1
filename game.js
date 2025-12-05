@@ -67,7 +67,7 @@ function updateDifficultyAndUI() {
   const oldLevel = level;
 
   // 每 1000 分升一級：0~999 分是 Lv1，1000~1999 分是 Lv2 ...
-  const newLevel = 1 + Math.floor(score / 100);
+  const newLevel = 1 + Math.floor(score / 1000);
   level = newLevel;
 
   // 基礎門檻 6，每升一級 +1 → Lv1:6, Lv2:7, Lv3:8...

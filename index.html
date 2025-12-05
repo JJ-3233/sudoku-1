@@ -3,22 +3,33 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>9×9 顏色消除遊戲</title>
+  <title>方塊移動遊戲</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>9×9 顏色消除遊戲</h1>
+  <h1>方塊移動遊戲</h1>
 
-  <div class="info">
-    <span>步數：<span id="moves">0</span></span>
-    <span>消除：<span id="cleared">0</span></span>
-    <span>分數：<span id="score">0</span></span>
+  <div class="top-bar">
+    <div class="badge score-badge">
+      分數
+      <span id="score">0</span>
+    </div>
+    <div class="badge level-badge">
+      等級
+      <span id="level">1</span>
+    </div>
+    <div class="badge threshold-badge">
+      消除門檻
+      <span id="threshold">6</span>
+    </div>
     <button id="restartBtn">重新開始</button>
   </div>
 
-  <div id="board"></div>
+<div id="board">
+  <div id="levelUpToast"></div>
+</div>
 
-  <div id="message"></div>
+<div id="message"></div>
 
   <script src="game.js"></script>
 </body>

@@ -134,11 +134,11 @@ function handleCellClick(r, c) {
 
 
   // 再點同一格：取消選取
-  if (selectedCell.r === r && selectedCell.c === c) {
-    selectedCell = null;
-    renderBoard();
-    return;
-  }
+  //if (selectedCell.r === r && selectedCell.c === c) {
+  //  selectedCell = null;
+  //  renderBoard();
+  //  return;
+  //}
 
   // 點到另一個有顏色格：改選
   if (cell.color) {
@@ -343,7 +343,7 @@ function computeGroupSizes(clearMode) {
         toClear.push(...group);
         if (clearMode) {
           clearedAny = true;
-          score += size * size;
+          score += size * size ;
           clearedCount += size;
         }
       }

@@ -51,7 +51,7 @@ function initGame() {
   selectedCell = null;
   moves = 0;
   clearedCount = 0;
-  score = 0;
+  score = 5000;
   gameOver = false;
   lastMoveDest = null;
   latestClearingCells = [];

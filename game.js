@@ -81,10 +81,10 @@ function updateStats() {
 function updateDifficultyAndUI() {
   // 🔧 測試方便：每 100 分升一級
   // 之後你要正式版，把 100 改回 1000 即可
-  if(minGroupToClear<10)｛
+  
     const newLevel = 1 + Math.floor(score / 1000);
     level = newLevel;
-  ｝
+
   // 基礎門檻 6，每升一級 +1 → Lv1:6, Lv2:7, Lv3:8...
   minGroupToClear = 6 + (level - 1);
 

@@ -19,7 +19,7 @@ let moves = 0;
 let clearedCount = 0;
 let score = 0;
 let gameOver = false;
-
+  
 let lastMoveDest = null;
 let latestClearingCells = [];
 let isAnimating = false; // 動畫進行中時，忽略操作
@@ -51,7 +51,8 @@ function initGame() {
   selectedCell = null;
   moves = 0;
   clearedCount = 0;
-  score =4000;
+  //score = 0;
+  score = 0;
   gameOver = false;
   lastMoveDest = null;
   latestClearingCells = [];
@@ -79,11 +80,11 @@ function updateStats() {
 
 // 每當分數更新時，根據分數計算等級 & 消除門檻
 function updateDifficultyAndUI() {
-  // 🔧 測試方便：每 100 分升一級
-  // 之後你要正式版，把 100 改回 1000 即可
-  
+
+  if( minGroupToClear < 10 ) {
     const newLevel = 1 + Math.floor(score / 1000);
     level = newLevel;
+  } 
 
   // 基礎門檻 6，每升一級 +1 → Lv1:6, Lv2:7, Lv3:8...
   minGroupToClear = 6 + (level - 1);
